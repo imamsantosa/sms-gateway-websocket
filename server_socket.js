@@ -62,7 +62,6 @@ ws.on('connection', (socketClient) => {
 	const socketSubs = socketObservable
 		.subscribe(
 			(message) => {
-				// console.log(message)
 				outbox.update({confirmed: true},{where:{id: message.id}})
 			},
 			(err) => {
