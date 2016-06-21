@@ -21,7 +21,7 @@ const dbconn = new Sequelize('smsgateway', 'smsgateway', 'smsgateway!', {
 
 const outbox = model(dbconn);
 
-const checking = () => {
+const checking = (socketClient) => {
 			console.log("checking...")
 			let getData = outbox.findAll(
 				{where: {sended: false}}
@@ -46,7 +46,7 @@ const checking = () => {
 		}
 
 const sendData = (socketClient) => {
-		setTimeout(checking, 1000*5)
+		setTimeout(checking(socketClient), 1000*5)
 	}
 
 ws.on('connection', (socketClient) => {
@@ -77,7 +77,7 @@ ws.on('connection', (socketClient) => {
 		)
 
 	socketClient.on('disconnected', () => {
-		clearTimeout(checking)
+		clearTimeout(checking(socketClient))
 		socketSubs && socketSubs.dispose()
 	})
 
