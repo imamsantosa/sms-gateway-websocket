@@ -5,8 +5,9 @@ module.exports = (db) => {
     const outbox = db.define('outbox', {
 
         id: {
-            type: UUID,
-            primaryKey: true
+            type: INTEGER,
+            primaryKey: true,
+            autoIncrement: true
         },
         senderNumber: {
             type: STRING

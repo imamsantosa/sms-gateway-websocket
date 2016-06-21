@@ -32,11 +32,38 @@ ws.on('connection', (socketClient) => {
 		}
 	})
 
+	const sendData = () => {
+		setTimeout(() => {
+			console.log("checking...")
+			let getData = outbox.findAll(
+				{where: {sended: false}}
+			).then((data) => {
+				data.forEach(d => {
+					let id = d.dataValues.id;
+					outbox.update(
+						{sended: true},
+						{where: {id}}
+					)
+					let data = {
+						id: d.dataValues.id,
+						phone: d.dataValues.senderNumber,
+						text: d.dataValues.text
+					}
+					socketClient.emit('message', {data})
+
+					console.log("zz", d.dataValues)
+				})
+			})
+			sendData()
+		}, 1000*5)
+	}
+	sendData();
+
 	const socketSubs = socketObservable
 		.subscribe(
 			(message) => {
-				console.log(message)
-				socketClient.emit('message', {message: `You said "${message}"`})
+				// console.log(message)
+				outbox.update({confirmed: true},{where:{id: message.id}})
 			},
 			(err) => {
 				console.log(err)
@@ -56,6 +83,5 @@ ws.on('connection', (socketClient) => {
 const port = process.env.PORT || `1300`
 server.listen(port, `127.0.0.1`, (err) => {
 	if(err) throw err
-
 	console.log(`Server started at port ${port}`)
 })
