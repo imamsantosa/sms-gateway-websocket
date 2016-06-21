@@ -21,7 +21,19 @@ const dbconn = new Sequelize('smsgateway', 'smsgateway', 'smsgateway!', {
 
 const outbox = model(dbconn);
 
-const checking = (socketClient) => {
+ws.on('connection', (socketClient) => {
+	console.log(`New client`)
+	const socketObservable = Rx.Observable.create((observer) => {
+		socketClient.on('message', message => observer.onNext(message))
+		socketClient.on('error', err => observer.onError(err))
+		return () => {
+			socketClient.close()
+			console.log(`Connection closed`)
+		}
+	})
+
+	const sendData = () => {
+		setTimeout(() => {
 			console.log("checking...")
 			let getData = outbox.findAll(
 				{where: {sended: false}}
@@ -42,25 +54,11 @@ const checking = (socketClient) => {
 					console.log("zz", d.dataValues)
 				})
 			})
-			sendData(socketClient)
-		}
-
-const sendData = (socketClient) => {
-		setTimeout(checking(socketClient), 1000*5)
+			sendData()
+		}, 1000*5)
 	}
 
-ws.on('connection', (socketClient) => {
-	console.log(`New client`)
-	const socketObservable = Rx.Observable.create((observer) => {
-		socketClient.on('message', message => observer.onNext(message))
-		socketClient.on('error', err => observer.onError(err))
-		return () => {
-			socketClient.close()
-			console.log(`Connection closed`)
-		}
-	})
-	
-	sendData(socketClient);
+	sendData();
 
 	const socketSubs = socketObservable
 		.subscribe(
@@ -77,7 +75,7 @@ ws.on('connection', (socketClient) => {
 		)
 
 	socketClient.on('disconnected', () => {
-		clearTimeout(checking(socketClient))
+		clearTimeout(sendData);
 		socketSubs && socketSubs.dispose()
 	})
 
