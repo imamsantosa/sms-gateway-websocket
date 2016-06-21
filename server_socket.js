@@ -27,38 +27,35 @@ ws.on('connection', (socketClient) => {
 		socketClient.on('message', message => observer.onNext(message))
 		socketClient.on('error', err => observer.onError(err))
 		return () => {
-			socketClient.close()
+			// socketClient.close()
 			console.log(`Connection closed`)
 		}
 	})
 
 	const sendData = () => {
-		setTimeout(() => {
-			console.log("checking...")
-			let getData = outbox.findAll(
-				{where: {sended: false}}
-			).then((data) => {
-				data.forEach(d => {
-					let id = d.dataValues.id;
-					outbox.update(
-						{sended: true},
-						{where: {id}}
-					)
-					let data = {
-						id: d.dataValues.id,
-						phone: d.dataValues.senderNumber,
-						text: d.dataValues.text
-					}
-					socketClient.emit('message', {data})
+		console.log("checking...")
+		let getData = outbox.findAll(
+			{where: {sended: false}}
+		).then((data) => {
+			data.forEach(d => {
+				let id = d.dataValues.id;
+				outbox.update(
+					{sended: true},
+					{where: {id}}
+				)
+				let data = {
+					id: d.dataValues.id,
+					phone: d.dataValues.senderNumber,
+					text: d.dataValues.text
+				}
+				socketClient.emit('message', {data})
 
-					console.log("zz", d.dataValues)
-				})
+				console.log("zz", d.dataValues)
 			})
-			sendData()
-		}, 1000*5)
+		})
 	}
 
-	sendData();
+	let setTime = setTimeout(sendData, 1000*5)
 
 	const socketSubs = socketObservable
 		.subscribe(
@@ -74,8 +71,8 @@ ws.on('connection', (socketClient) => {
 			}
 		)
 
-	socketClient.on('disconnected', () => {
-		clearTimeout(sendData);
+	socketClient.on('disconnect', () => {
+		clearTimeout(setTime);
 		socketSubs && socketSubs.dispose()
 	})
 
